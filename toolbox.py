@@ -50,7 +50,8 @@ class Tree:
         prev = None
         while not isinstance(current, ActionNode):
             if current == prev:
-                raise ValueError("lol")
+                print(str(prev), str(prev.right_child), str(prev.left_child))
+                raise ValueError("loooop in tree")
             print(f"{current}-{current.right_child}")
             print("|")
             prev = current
@@ -84,6 +85,7 @@ class Tree:
     def swap_nodes(self, n1, n2):
         n1.situation_index, n2.situation_index = n2.situation_index, n1.situation_index
         n1.is_inverted, n2.is_inverted = n2.is_inverted, n1.is_inverted
+
         n1.right_child.action, n2.right_child.action = n2.right_child.action, n1.right_child.action
 
     def build_tree(self, node, depth):
@@ -163,7 +165,7 @@ class ToolBox:
         return self.selector[key].random_traverse()
 
 if __name__ == '__main__':
-    tb = ToolBox(3, [1,2,3], 5)
+    tb = ToolBox(10, [1,2,3], 5)
     tb.trees[0].show()
     tb.trees[0].add_cue_action_pair(tb.trees[0].root.left_child)
     tb.trees[0].show()

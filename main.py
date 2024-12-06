@@ -16,8 +16,43 @@ def crossover(parent1, parent2):
             for h1, h2 in zip(parent1.trees, parent2.trees):
                 node1 = h1.random_traverse()
                 node2 = h2.random_traverse()
+                if isinstance(node1, ActionNode) or isinstance(node2, ActionNode):
+                    continue
+                
+                current = node1
+                while not isinstance(current, ActionNode):
+                    if current == node2:
+                        break
+                    current = current.left_child
+                else:
+                    continue
+
                 node1.left_child = node2
                 node2.parent = node1
+
+                temp_left = node1.left_child
+                node1.left_child = node2.left_child
+                node2.left_child = temp_left
+
+                # Update the parent pointers for the swapped children
+                if node1.left_child is not None:
+                    node1.left_child.parent = node1
+                if node2.left_child is not None:
+                    node2.left_child.parent = node2
+                
+                # Swap the parent links of the nodes as well
+                temp_parent = node1.parent
+                node1.parent = node2.parent
+                node2.parent = temp_parent
+                
+                # Update the parent references after swapping
+                if node1.parent is not None:
+                    node1.parent.left_child = node1
+                if node2.parent is not None:
+                    node2.parent.left_child = node2
+                print("corsy")
+                h1.show()
+                h2.show()
             return parent1
     else:
         return parent1
@@ -50,10 +85,10 @@ def mutate(child):
     child.trees = copyList
 
     for i, heuristic in enumerate(child.trees):
-        print(i)
+        print("heuristic", i)
         current = heuristic.root.left_child
         while not isinstance(current, ActionNode):
-            #heuristic.show()
+            heuristic.show()
             #time.sleep(0.01)
             if current is None:
                 break
@@ -135,9 +170,9 @@ def run_simulation(depth = DEPTH, actions = ACTIONS, situation_amount = SITUATIO
                     continue
                 #print(type(parent2), parent2)
                 child = crossover(parent1, parent2)
-                #print("done crosover: ", type(child))
+                print("done crosover: ", type(child))
                 child = mutate(child)
-                #print("done mutating: ", type(child))
+                print("done mutating: ", type(child))
                 newPopulation.append(child)
         population = newPopulation
         populations.append(len(population)) 
