@@ -1,6 +1,7 @@
 import random
 from toolbox import ToolBox, Tree, ActionNode, CueNode
 import matplotlib.pyplot as plt
+import time
 
 def crossover(parent1, parent2):
     p1 = random.uniform(0, 1)
@@ -16,6 +17,7 @@ def crossover(parent1, parent2):
                 node1 = h1.random_traverse()
                 node2 = h2.random_traverse()
                 node1.left_child = node2
+                node2.parent = node1
             return parent1
     else:
         return parent1
@@ -37,7 +39,8 @@ def mutate(child):
                 copyList.insert(i+1, Tree(DEPTH, ACTIONS, SITUATION_AMOUNT))
             elif p2 < 0.75:
                 # Delete selector cue
-                del copyList[i]
+                if len(copyList) > 1:
+                    del copyList[i]
             else:
                 # swap two selector cues
                 j = random.randint(0,len(child.trees)-1)
@@ -46,9 +49,12 @@ def mutate(child):
                 copyList[j] = tmp
     child.trees = copyList
 
-    for heuristic in child.trees:
+    for i, heuristic in enumerate(child.trees):
+        print(i)
         current = heuristic.root.left_child
         while not isinstance(current, ActionNode):
+            #heuristic.show()
+            #time.sleep(0.01)
             if current is None:
                 break
             p1 = random.uniform(0,1)
@@ -66,39 +72,19 @@ def mutate(child):
                     current.right_child.action = n
                 elif p2 <= 0.6:
                     print("add cue")
-                    newCueNode = CueNode.cue_node_factory(current, SITUATION_AMOUNT)
-                    newCueNode.right_child = ActionNode(
-                        parent= newCueNode, 
-                        action= random.choice(ACTIONS),
-                        left_child= None,
-                        right_child= None
-                    )
-                    newCueNode.left_child = current.left_child
-                    newCueNode.left_child.parent = newCueNode
-                    current = newCueNode
+                    current = heuristic.add_cue_action_pair(current)
                 elif p2 <= 0.8:
                     print("delete cue")
                     # delete the current node
-                    n1 = current.parent
-                    n3 = current.left_child
-
-                    n1.left_child = n3
-                    n3.parent = n1
-                    current = n3
+                    current = heuristic.delete_node(current)
                 else:
                     print("swap cue")
                     # swap curent node with a random node
                     other = heuristic.random_traverse()
-                    parent1 = other.parent
-                    parent2 = current.parent
-                    current.parent = parent1
-                    other.parent = parent2
-                    
-                    lc1 = other.left_child
-                    lc2 = current.left_child
-                    current.left_child = lc1
-                    other.left_child = lc2
-                     
+                    print(str(other), str(current))
+                    if not isinstance(other, ActionNode) and other != current:
+                        heuristic.swap_nodes(current, other)
+                    current = other
             current = current.left_child
     return child
     
@@ -141,19 +127,20 @@ def run_simulation(depth = DEPTH, actions = ACTIONS, situation_amount = SITUATIO
             k = random.uniform(0, 1)
             if k <= 0.474:
                 num_children = 2
-            print('It reaches this for loop')
+            print(time.time(), 'It reaches this for loop')
             for j in range(num_children):
-                print("mutating: ", j)
+                #print("mutating: ", j)
                 parent2 = random.choice(population)
-                print(type(parent2), parent2)
+                if parent2 == parent1:
+                    continue
+                #print(type(parent2), parent2)
                 child = crossover(parent1, parent2)
-                print("done crosover: ", type(child))
+                #print("done crosover: ", type(child))
                 child = mutate(child)
-                print("done mutating: ", type(child))
+                #print("done mutating: ", type(child))
                 newPopulation.append(child)
         population = newPopulation
-        #populations.append(len(populations))
-    
+        populations.append(len(population)) 
     return populations
 
 def main():
