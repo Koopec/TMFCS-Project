@@ -148,7 +148,7 @@ class Tree:
 class ToolBox:
     def __init__(self, depth, actions, situation_amount):
         self.trees = []
-        for _ in range(3):
+        for _ in range(5):
             self.trees.append(Tree(depth= depth, actions= actions, situation_amount= situation_amount))
 
     def show(self):

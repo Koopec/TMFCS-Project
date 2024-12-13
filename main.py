@@ -10,15 +10,16 @@ def crossover(parent1, parent2):
         if p2 <= 0.5:
             c1 = random.randint(0, len(parent1.trees)-1)
             c2 = random.randint(0, len(parent2.trees)-1)
-            parent1.trees[c1] = parent2.trees[c2]
+            parent1.trees = parent1.trees[:c1] + parent2.trees[c2:]
             return parent1
         else:
-            for h1, h2 in zip(parent1.trees, parent2.trees):
+            for h1, h2 in zip(parent1.trees, parent2.trees): # do we implement this get rid of all prior/all following ones?
                 node1 = h1.random_traverse()
                 node2 = h2.random_traverse()
                 if isinstance(node1, ActionNode) or isinstance(node2, ActionNode):
                     continue
-                
+                # basicaly when splicing two trees togheter we can create a loop
+                # so we check for that and only splice if shure we dont create a loop
                 current = node1
                 while not isinstance(current, ActionNode):
                     if current == node2:
@@ -50,7 +51,6 @@ def crossover(parent1, parent2):
                     node1.parent.left_child = node1
                 if node2.parent is not None:
                     node2.parent.left_child = node2
-                print("corsy")
                 h1.show()
                 h2.show()
             return parent1
@@ -88,7 +88,7 @@ def mutate(child):
         print("heuristic", i)
         current = heuristic.root.left_child
         while not isinstance(current, ActionNode):
-            heuristic.show()
+            #heuristic.show()
             #time.sleep(0.01)
             if current is None:
                 break
@@ -124,21 +124,29 @@ def mutate(child):
     return child
     
 
-def fitness(toolbox,world,situations):
+def get_incorrect_num(toolbox,world,situations):
     score = 0
     for situation in situations:
         if toolbox.get_action(situation) == world.get_action(situation):
             score +=1
     return len(situations) - score # number of incorrect actions
 
+def fitness(toolbox,world,situations):
+    score = 0
+    for situation in situations:
+        if toolbox.get_action(situation) == world.get_action(situation):
+            score +=1
+    return score/len(situations) # number of incorrect actions
+
 # DEFINE GLOBAL CONSTANTS
-p = 0.5 
-DEPTH = 3
-ACTIONS = range(1,5)
-SITUATION_AMOUNT = 3
+p = 0.0004 
+DEPTH = 5
+ACTIONS = range(1,50)
+SITUATION_AMOUNT = 10
 
 def run_simulation(depth = DEPTH, actions = ACTIONS, situation_amount = SITUATION_AMOUNT):
     populations = []
+    avg_fitness = []
     # Startt the main evolution algorithm
     world = ToolBox(depth= depth, actions= actions, situation_amount= situation_amount)    
     population = [ToolBox(depth= depth, actions= actions, situation_amount= situation_amount) for _ in range(500)]
@@ -146,21 +154,28 @@ def run_simulation(depth = DEPTH, actions = ACTIONS, situation_amount = SITUATIO
     while 0 < len(population) < 600:
         print("iteration: ", count)
         count += 1
-        situations = [[random.choice([True,False]) for _ in range(10)] for _ in range(1000)]
+        situations = [[random.choice([True,False]) for _ in range(SITUATION_AMOUNT)] for _ in range(2**SITUATION_AMOUNT)]
+        fitnesses = []
+        popcopy = population.copy()
         for i, individual in enumerate(population): # remove underperforming individuals
             print("induvidual: ", i)
-            num_incorrect = fitness(individual, world, situations) 
-            d = (1 - p)**num_incorrect
-            k = random.uniform(0, 1)
-            if k > d:
-                population.remove(individual)
+            num_incorrect = get_incorrect_num(individual, world, situations) 
+            s = (1 - p)**num_incorrect # 1 - p is chance of survival, with more incorrect actions, more likely to die
+            f = fitness(individual, world, situations)
+            fitnesses.append(f)
+            k = random.uniform(0, 1) 
+            if k > s: # the smaller s, the more likely k is bigger than s, so the more likely to be removed
+                popcopy.remove(individual)
+        population = popcopy
+        print(fitnesses)
+        avg_fitness.append(sum(fitnesses)/len(fitnesses))
         print('Killed unperformers')
         newPopulation = []
         for individual in population: # choose two parents, choose num of children, crossover & mutate heuristics for children
             parent1 = individual
             num_children = 1
             k = random.uniform(0, 1)
-            if k <= 0.474:
+            if k <= 0.333: # 0.474 for supplementary materials 
                 num_children = 2
             print(time.time(), 'It reaches this for loop')
             for j in range(num_children):
@@ -176,13 +191,19 @@ def run_simulation(depth = DEPTH, actions = ACTIONS, situation_amount = SITUATIO
                 newPopulation.append(child)
         population = newPopulation
         populations.append(len(population)) 
-    return populations
+    return populations, avg_fitness
 
 def main():
-    data = run_simulation()
+    data, fitnesses = run_simulation()
+    print(len(data), data)
     plt.plot(data)
     plt.xlabel('Generation')
     plt.ylabel('Population')
+    plt.show()
+
+    plt.plot(fitnesses)
+    plt.xlabel('Generation')
+    plt.ylabel('avg fitness')
     plt.show()
 
 if __name__ == '__main__':
