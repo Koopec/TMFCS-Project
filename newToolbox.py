@@ -31,6 +31,13 @@ class Tree():
         self.actions = actions
         self.situation_amount = situation_amount
         self.build_tree(tmp, depth)
+    
+    def copy(self):
+        nt = Tree(3,range(0,2),3)
+        nt.root = self.root.copy()
+        nt.situation_amount = self.situation_amount
+        nt.actions = self.actions 
+        return nt
 
     def build_tree(self, node, depth):
         if depth <= 0:
@@ -57,7 +64,7 @@ class Tree():
             if newNode is None:
                 if isinstance(node.left, ActionNode):
                     return node.left.action
-                return node.left.decide(situation)
+                return get_action_rec(situation, node.left)
             return get_action_rec(situation, newNode)
         return get_action_rec(situation, self.root)
     
@@ -142,6 +149,14 @@ class ToolBox:
         self.trees = []
         for _ in range(5):
             self.trees.append(Tree(depth= depth, actions= actions, situation_amount= situation_amount))
+    
+    def copy(self):
+        newTrees = []
+        for tree in self.trees:
+            newTrees.append(tree.copy())
+        nt = ToolBox(3,range(0,2),3)
+        nt.trees = newTrees
+        return nt
 
     def show(self):
         for tree in self.trees:

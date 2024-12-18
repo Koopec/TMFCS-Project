@@ -28,32 +28,11 @@ def crossover(parent1, parent2):
                 else:
                     continue
 
+                node1.left = None
+                node2.parent = None 
                 node1.left = node2
                 node2.parent = node1
-
-                temp_left = node1.left
-                node1.left = node2.left
-                node2.left = temp_left
-
-                # Update the parent pointers for the swapped children
-                if node1.left is not None:
-                    node1.left.parent = node1
-                if node2.left is not None:
-                    node2.left.parent = node2
-                
-                # Swap the parent links of the nodes as well
-                temp_parent = node1.parent
-                node1.parent = node2.parent
-                node2.parent = temp_parent
-                
-                # Update the parent references after swapping
-                if node1.parent is not None:
-                    node1.parent.left = node1
-                if node2.parent is not None:
-                    node2.parent.left = node2
-                h1.show()
-                h2.show()
-            return parent1
+            return parent1.copy()
     else:
         return parent1
     
@@ -139,28 +118,41 @@ def fitness(toolbox,world,situations):
     return score/len(situations) # number of incorrect actions
 
 # DEFINE GLOBAL CONSTANTS
-p = 0.0004 
+p = 0.0004052120601755858838
 DEPTH = 5
 ACTIONS = range(1,50)
 SITUATION_AMOUNT = 10
+pw = [random.uniform(0.0004, 0.0008) for _ in range(2**SITUATION_AMOUNT)]
+ENDGAME = 2000
+NPOPULATION = 200
+
+def get_sorvival_prob_score(toolbox,world,situations):
+    score = 1
+    for i,situation in enumerate(situations):
+        if toolbox.get_action(situation) != world.get_action(situation):
+            score *= 1 - pw[i]
+    return score 
 
 def run_simulation(depth = DEPTH, actions = ACTIONS, situation_amount = SITUATION_AMOUNT):
     populations = []
     avg_fitness = []
     # Startt the main evolution algorithm
     world = ToolBox(depth= depth, actions= actions, situation_amount= situation_amount)    
-    population = [ToolBox(depth= depth, actions= actions, situation_amount= situation_amount) for _ in range(500)]
+    population = [ToolBox(depth= depth, actions= actions, situation_amount= situation_amount) for _ in range(NPOPULATION)]
     count = 0
-    while 0 < len(population) < 600:
+    while 0 < len(population) < ENDGAME:
         print("iteration: ", count)
         count += 1
         situations = [[random.choice([True,False]) for _ in range(SITUATION_AMOUNT)] for _ in range(2**SITUATION_AMOUNT)]
         fitnesses = []
         popcopy = population.copy()
         for i, individual in enumerate(population): # remove underperforming individuals
-            print("induvidual: ", i)
+            #print("induvidual: ", i)
             num_incorrect = get_incorrect_num(individual, world, situations) 
             s = (1 - p)**num_incorrect # 1 - p is chance of survival, with more incorrect actions, more likely to die
+            #print("old",s)
+            s = get_sorvival_prob_score(individual, world, situations)
+            #print(s)
             f = fitness(individual, world, situations)
             fitnesses.append(f)
             k = random.uniform(0, 1) 
@@ -194,14 +186,18 @@ def run_simulation(depth = DEPTH, actions = ACTIONS, situation_amount = SITUATIO
     return populations, avg_fitness
 
 def main():
-    data, fitnesses = run_simulation()
-    print(len(data), data)
-    plt.plot(data)
+    allFs = []
+    for _ in range(10):
+        data, fitnesses = run_simulation()
+        allFs.append(fitnesses)
+        print(len(data), data)
+        plt.plot(data)
     plt.xlabel('Generation')
     plt.ylabel('Population')
     plt.show()
-
-    plt.plot(fitnesses)
+    
+    for f in allFs:
+        plt.plot(f)
     plt.xlabel('Generation')
     plt.ylabel('avg fitness')
     plt.show()
